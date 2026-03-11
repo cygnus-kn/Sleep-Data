@@ -392,6 +392,49 @@
             gap: 6px;
         }
 
+        .overview-ruler {
+            display: flex;
+            align-items: flex-end;
+            padding: 0 4px;
+            margin-bottom: 4px;
+            padding-bottom: 8px;
+        }
+
+        .overview-ruler-spacer {
+            width: 80px;
+            flex-shrink: 0;
+        }
+
+        .overview-ruler-area {
+            flex: 1;
+            position: relative;
+            height: 20px;
+            margin-left: 12px;
+            margin-right: 62px;
+            border-bottom: 1px solid rgba(42, 53, 80, 0.6);
+        }
+
+        .overview-ruler-tick {
+            position: absolute;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .overview-ruler-tick::after {
+            content: '';
+            width: 1px;
+            height: 8px;
+            background: rgba(42, 53, 80, 0.8);
+        }
+
+        .overview-ruler-label {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            margin-bottom: 2px;
+        }
+
         .overview-row {
             display: flex;
             align-items: center;
@@ -415,13 +458,20 @@
             font-weight: 500;
         }
 
-        .overview-bar-container {
+        .overview-bar-area {
             flex: 1;
+            position: relative;
+            height: 22px;
+        }
+
+        .overview-bar-container {
             height: 22px;
             display: flex;
             border-radius: 4px;
             overflow: hidden;
-            position: relative;
+            position: absolute;
+            top: 0;
+            left: 0;
         }
 
         .overview-segment {
@@ -487,6 +537,115 @@
             margin-top: 2px;
         }
 
+        /* Week View */
+        .week-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .week-stat {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid rgba(42, 53, 80, 0.4);
+            border-radius: 12px;
+            padding: 14px;
+            text-align: center;
+        }
+
+        .week-stat-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .week-stat-label {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+        }
+
+        .week-bar-chart {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            height: 260px;
+            gap: 12px;
+            padding: 8px 0;
+        }
+
+        .week-bar-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            gap: 6px;
+            cursor: pointer;
+        }
+
+        .week-bar-col:hover .week-bar {
+            opacity: 0.8;
+            transform: scaleX(1.05);
+        }
+
+        .week-bar {
+            width: 100%;
+            max-width: 60px;
+            border-radius: 6px 6px 0 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+
+        .week-bar-seg {
+            width: 100%;
+        }
+
+        .week-bar-seg.deep { background: var(--deep); }
+        .week-bar-seg.rem { background: var(--rem); }
+        .week-bar-seg.light { background: var(--light); }
+        .week-bar-seg.awake { background: var(--awake); }
+
+        .week-bar-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        .week-bar-date {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        .week-bar-dur {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            text-align: center;
+        }
+
+        .week-bar-times {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .week-bar-col.no-data {
+            cursor: default;
+            opacity: 0.3;
+        }
+
+        .week-bar-col.no-data .week-bar-label {
+            color: var(--text-muted);
+        }
+
         /* Loading */
         .loading {
             position: absolute;
@@ -533,6 +692,7 @@
 
         <div class="view-toggle">
             <button class="toggle-btn active" onclick="setView('detail')" id="btn-detail" disabled>Day View</button>
+            <button class="toggle-btn" onclick="setView('week')" id="btn-week" disabled>Week View</button>
             <button class="toggle-btn" onclick="setView('overview')" id="btn-overview" disabled>Overview</button>
         </div>
 
@@ -550,13 +710,17 @@
             </div>
         </div>
 
-        <div id="overview-view" style="display: none;">
+        <div id="week-view" style="display: none;">
             <div class="nav-row">
-                <button class="nav-btn" id="ov-prev-btn" onclick="navigateOverview(-1)">← Newer</button>
-                <span class="nav-title" id="ov-nav-title"></span>
-                <button class="nav-btn" id="ov-next-btn" onclick="navigateOverview(1)">Older →</button>
+                <button class="nav-btn" id="wk-prev-btn" onclick="navigateWeek(-1)">← Prev</button>
+                <span class="nav-title" id="wk-nav-title"></span>
+                <button class="nav-btn" id="wk-next-btn" onclick="navigateWeek(1)">Next →</button>
             </div>
-            <div class="chart-container" id="overview-chart-container"></div>
+            <div class="chart-container" id="week-chart-container"></div>
+        </div>
+
+        <div id="overview-view" style="display: none;">
+            <div class="chart-container" id="overview-chart-container" style="max-height: 70vh; overflow-y: auto;"></div>
         </div>
     </div>
 
@@ -571,6 +735,7 @@
     let STAGES_RAW = [];
     let sessions = [];
     let dayGroups = [];
+    let weekGroups = [];
 
     // Stage type mapping
     const STAGE_MAP = {
@@ -622,12 +787,41 @@
         const sortedDays = Object.keys(grouped).sort();
         for (const k of sortedDays) dayGroups.push(grouped[k]);
 
+        // Build week groups (Mon-Sun)
+        buildWeekGroups();
+
         // Enable buttons once data is processed
         document.getElementById('btn-detail').disabled = false;
+        document.getElementById('btn-week').disabled = false;
         document.getElementById('btn-overview').disabled = false;
         
         // Start viewing
         currentDayIndex = dayGroups.length - 1;
+    }
+
+    function buildWeekGroups() {
+        // Group night sessions by ISO week (Monday start)
+        const nightSessions = sessions.filter(s => s.isNight);
+        const weekMap = {};
+
+        for (const s of nightSessions) {
+            // Use wake-up date as reference
+            const ref = s.endLocal;
+            // Get Monday of this week
+            const day = ref.getUTCDay(); // 0=Sun
+            const diff = day === 0 ? 6 : day - 1; // days since Monday
+            const monday = new Date(ref);
+            monday.setUTCDate(ref.getUTCDate() - diff);
+            const key = monday.getUTCFullYear() + '-' +
+                        String(monday.getUTCMonth() + 1).padStart(2, '0') + '-' +
+                        String(monday.getUTCDate()).padStart(2, '0');
+            if (!weekMap[key]) {
+                weekMap[key] = { mondayKey: key, mondayDate: new Date(monday), sessions: [] };
+            }
+            weekMap[key].sessions.push(s);
+        }
+
+        weekGroups = Object.keys(weekMap).sort().map(k => weekMap[k]);
     }
 
     // ========== HELPERS ==========
@@ -798,30 +992,37 @@
     }
 
     // ========== OVERVIEW VIEW ==========
-    const OVERVIEW_PAGE_SIZE = 14;
-    let overviewPage = 0;
-
     function renderOverview() {
         const nightSessions = sessions.filter(s => s.isNight).reverse();
-        const pages = [];
-        for (let i = 0; i < nightSessions.length; i += OVERVIEW_PAGE_SIZE) {
-            pages.push(nightSessions.slice(i, i + OVERVIEW_PAGE_SIZE));
-        }
+        if (nightSessions.length === 0) return;
 
-        if (pages.length === 0) return;
-        overviewPage = Math.min(overviewPage, pages.length - 1);
-        const page = pages[overviewPage];
-
-        document.getElementById('ov-prev-btn').disabled = overviewPage <= 0;
-        document.getElementById('ov-next-btn').disabled = overviewPage >= pages.length - 1;
-        document.getElementById('ov-nav-title').textContent = `Page ${overviewPage + 1} of ${pages.length}`;
+        // Find max duration for proportional bar widths
+        const maxDur = Math.max(...nightSessions.map(s => s.durationMin));
+        // Round up to nearest hour for ruler
+        const maxHours = Math.ceil(maxDur / 60);
 
         const container = document.getElementById('overview-chart-container');
-        let html = '<div class="overview-chart">';
 
-        for (const session of page) {
+        // Build time ruler
+        let rulerHtml = `<div class="overview-ruler">
+            <div class="overview-ruler-spacer"></div>
+            <div class="overview-ruler-area">`;
+        for (let h = 1; h <= maxHours; h++) {
+            const pos = (h / (maxDur / 60)) * 100;
+            if (pos <= 100) {
+                rulerHtml += `<div class="overview-ruler-tick" style="left:${pos}%">
+                    <span class="overview-ruler-label">${h}h</span>
+                </div>`;
+            }
+        }
+        rulerHtml += '</div></div>';
+
+        let html = rulerHtml + '<div class="overview-chart">';
+
+        for (const session of nightSessions) {
             const stages = session.stages;
             const totalDur = session.end_time - session.start_time;
+            const barWidthPct = (session.durationMin / maxDur) * 100;
 
             let segmentsHtml = '';
             for (const st of stages) {
@@ -837,18 +1038,15 @@
 
             html += `<div class="overview-row" onclick="goToDay('${dateKey}')">
                 <div class="overview-date">${dateStr}</div>
-                <div class="overview-bar-container">${segmentsHtml}</div>
+                <div class="overview-bar-area">
+                    <div class="overview-bar-container" style="width:${barWidthPct}%">${segmentsHtml}</div>
+                </div>
                 <div class="overview-duration">${formatDurationShort(session.durationMin)}</div>
             </div>`;
         }
 
         html += '</div>';
         container.innerHTML = html;
-    }
-
-    function navigateOverview(dir) {
-        overviewPage += dir;
-        renderOverview();
     }
 
     function goToDay(dateKey) {
@@ -859,17 +1057,149 @@
         }
     }
 
+    // ========== WEEK VIEW ==========
+    let currentWeekIndex = 0;
+
+    function renderWeekView() {
+        if (weekGroups.length === 0) return;
+        currentWeekIndex = Math.max(0, Math.min(weekGroups.length - 1, currentWeekIndex));
+        const week = weekGroups[currentWeekIndex];
+
+        // Compute week range label
+        const mon = week.mondayDate;
+        const sun = new Date(mon);
+        sun.setUTCDate(mon.getUTCDate() + 6);
+        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        const rangeLabel = `${months[mon.getUTCMonth()]} ${mon.getUTCDate()} – ${months[sun.getUTCMonth()]} ${sun.getUTCDate()}, ${sun.getUTCFullYear()}`;
+
+        document.getElementById('wk-nav-title').textContent = rangeLabel;
+        document.getElementById('wk-prev-btn').disabled = currentWeekIndex <= 0;
+        document.getElementById('wk-next-btn').disabled = currentWeekIndex >= weekGroups.length - 1;
+
+        // Build a map: day-of-week -> session
+        const dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+        const dayMap = {};
+        for (const s of week.sessions) {
+            const ref = s.endLocal;
+            const dow = ref.getUTCDay();
+            const dowIdx = dow === 0 ? 6 : dow - 1; // 0=Mon
+            if (!dayMap[dowIdx]) dayMap[dowIdx] = [];
+            dayMap[dowIdx].push(s);
+        }
+
+        // Weekly stats
+        const n = week.sessions.length;
+        const avgDur = n > 0 ? week.sessions.reduce((a, s) => a + s.durationMin, 0) / n : 0;
+        let wkDeep = 0, wkRem = 0, wkLight = 0, wkAwake = 0;
+        for (const s of week.sessions) {
+            for (const st of s.stages) {
+                const dur = (st.stage_end_time - st.stage_start_time) / 60000;
+                if (st.stage_type === 5) wkDeep += dur;
+                else if (st.stage_type === 6) wkRem += dur;
+                else if (st.stage_type === 4) wkLight += dur;
+                else if (st.stage_type === 1) wkAwake += dur;
+            }
+        }
+        const avgDeep = n > 0 ? wkDeep / n : 0;
+        const avgRem = n > 0 ? wkRem / n : 0;
+        const avgBedHours = n > 0 ? week.sessions.reduce((a, s) => {
+            let h = s.startLocal.getUTCHours() + s.startLocal.getUTCMinutes() / 60;
+            if (h < 12) h += 24;
+            return a + h;
+        }, 0) / n : 0;
+        const dispBed = avgBedHours >= 24 ? avgBedHours - 24 : avgBedHours;
+        const bedH = Math.floor(dispBed);
+        const bedM = Math.round((dispBed - bedH) * 60);
+
+        let html = '';
+
+        // Weekly summary stats
+        html += `<div class="week-stats-grid">
+            <div class="week-stat"><div class="week-stat-value">${n}</div><div class="week-stat-label">Nights</div></div>
+            <div class="week-stat"><div class="week-stat-value">${formatDurationShort(avgDur)}</div><div class="week-stat-label">Avg Sleep</div></div>
+            <div class="week-stat"><div class="week-stat-value">${String(bedH).padStart(2,'0')}:${String(bedM).padStart(2,'0')}</div><div class="week-stat-label">Avg Bedtime</div></div>
+            <div class="week-stat"><div class="week-stat-value">${formatDurationShort(avgDeep)}</div><div class="week-stat-label">Avg Deep</div></div>
+            <div class="week-stat"><div class="week-stat-value">${formatDurationShort(avgRem)}</div><div class="week-stat-label">Avg REM</div></div>
+        </div>`;
+
+        // Vertical bar chart only
+        const maxDur = Math.max(...Object.values(dayMap).map(arr => arr.length > 0 ? arr[0].durationMin : 0), 1);
+        const maxBarHeight = 180;
+
+        html += '<div class="week-bar-chart">';
+        for (let i = 0; i < 7; i++) {
+            const daySessions = dayMap[i] || [];
+            const dayDate = new Date(mon);
+            dayDate.setUTCDate(mon.getUTCDate() + i);
+            const dateStr = String(dayDate.getUTCMonth() + 1).padStart(2, '0') + '/' + String(dayDate.getUTCDate()).padStart(2, '0');
+            const dateKey = dayDate.getUTCFullYear() + '-' + String(dayDate.getUTCMonth() + 1).padStart(2, '0') + '-' + String(dayDate.getUTCDate()).padStart(2, '0');
+
+            if (daySessions.length === 0) {
+                html += `<div class="week-bar-col no-data">
+                    <div class="week-bar" style="height:2px;background:var(--border);border-radius:1px;"></div>
+                    <div class="week-bar-label">${dayNames[i]}</div>
+                    <div class="week-bar-date">${dateStr}</div>
+                </div>`;
+            } else {
+                const s = daySessions[0];
+                const barH = (s.durationMin / maxDur) * maxBarHeight;
+                let dDeep = 0, dRem = 0, dLight = 0, dAwake = 0;
+                for (const st of s.stages) {
+                    const dur = (st.stage_end_time - st.stage_start_time) / 60000;
+                    if (st.stage_type === 5) dDeep += dur;
+                    else if (st.stage_type === 6) dRem += dur;
+                    else if (st.stage_type === 4) dLight += dur;
+                    else if (st.stage_type === 1) dAwake += dur;
+                }
+                const total = dDeep + dRem + dLight + dAwake || 1;
+                const segDeep = (dDeep / total) * barH;
+                const segRem = (dRem / total) * barH;
+                const segLight = (dLight / total) * barH;
+                const segAwake = (dAwake / total) * barH;
+                const bedStr = formatTime(s.startLocal);
+                const wakeStr = formatTime(s.endLocal);
+
+                html += `<div class="week-bar-col" onclick="goToDay('${dateKey}')">
+                    <div class="week-bar-dur">${formatDurationShort(s.durationMin)}</div>
+                    <div class="week-bar" style="height:${barH}px;">
+                        <div class="week-bar-seg awake" style="height:${segAwake}px"></div>
+                        <div class="week-bar-seg light" style="height:${segLight}px"></div>
+                        <div class="week-bar-seg rem" style="height:${segRem}px"></div>
+                        <div class="week-bar-seg deep" style="height:${segDeep}px"></div>
+                    </div>
+                    <div class="week-bar-label">${dayNames[i]}</div>
+                    <div class="week-bar-date">${dateStr}</div>
+                    <div class="week-bar-times">${bedStr} → ${wakeStr}</div>
+                </div>`;
+            }
+        }
+        html += '</div>';
+
+        document.getElementById('week-chart-container').innerHTML = html;
+    }
+
+    function navigateWeek(dir) {
+        currentWeekIndex += dir;
+        renderWeekView();
+    }
+
     // ========== VIEW TOGGLE ==========
     let currentView = 'detail';
 
     function setView(view) {
         currentView = view;
         document.getElementById('btn-detail').classList.toggle('active', view === 'detail');
+        document.getElementById('btn-week').classList.toggle('active', view === 'week');
         document.getElementById('btn-overview').classList.toggle('active', view === 'overview');
         document.getElementById('detail-view').style.display = view === 'detail' ? 'block' : 'none';
+        document.getElementById('week-view').style.display = view === 'week' ? 'block' : 'none';
         document.getElementById('overview-view').style.display = view === 'overview' ? 'block' : 'none';
 
         if (view === 'detail') renderDayChart();
+        else if (view === 'week') {
+            currentWeekIndex = weekGroups.length - 1;
+            renderWeekView();
+        }
         else renderOverview();
     }
 
