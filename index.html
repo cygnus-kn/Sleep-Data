@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sleep Cycle Visualization</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #111827;
+            --bg-card: #1a2235;
+            --bg-card-hover: #1f2a40;
+            --text-primary: #e8ecf4;
+            --text-secondary: #8b95a8;
+            --text-muted: #5a6478;
+            --border: #2a3550;
+            --accent-purple: #8b5cf6;
+            --accent-blue: #3b82f6;
+            --awake: #f97316;
+            --light: #60a5fa;
+            --deep: #6366f1;
+            --rem: #a78bfa;
+            --gradient-start: #1e1b4b;
+            --gradient-end: #0f172a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 48px 0 32px;
+            position: relative;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-purple), var(--accent-blue));
+            border-radius: 2px;
+        }
+
+        .header h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #c4b5fd, #818cf8, #60a5fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            font-weight: 300;
+        }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin: 24px 0 32px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+
+        .legend-dot.awake { background: var(--awake); }
+        .legend-dot.rem { background: var(--rem); }
+        .legend-dot.light { background: var(--light); }
+        .legend-dot.deep { background: var(--deep); }
+
+        /* Summary Cards */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .summary-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .summary-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            border-radius: 16px 16px 0 0;
+        }
+
+        .summary-card:nth-child(1)::before { background: linear-gradient(90deg, #818cf8, #6366f1); }
+        .summary-card:nth-child(2)::before { background: linear-gradient(90deg, #60a5fa, #3b82f6); }
+        .summary-card:nth-child(3)::before { background: linear-gradient(90deg, #a78bfa, #8b5cf6); }
+        .summary-card:nth-child(4)::before { background: linear-gradient(90deg, #f97316, #ea580c); }
+        .summary-card:nth-child(5)::before { background: linear-gradient(90deg, #34d399, #10b981); }
+
+        .summary-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(139, 92, 246, 0.3);
+            background: var(--bg-card-hover);
+        }
+
+        .summary-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+
+        .summary-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 4px;
+        }
+
+        /* View Toggle */
+        .view-toggle {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .toggle-btn {
+            padding: 8px 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-secondary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .toggle-btn:hover {
+            border-color: rgba(139, 92, 246, 0.4);
+            color: var(--text-primary);
+        }
+
+        .toggle-btn.active {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2));
+            border-color: var(--accent-purple);
+            color: var(--text-primary);
+        }
+
+        /* Navigation */
+        .nav-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .nav-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-secondary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .nav-btn:hover:not(:disabled) {
+            border-color: rgba(139, 92, 246, 0.4);
+            color: var(--text-primary);
+            background: var(--bg-card-hover);
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .nav-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* Chart Container */
+        .chart-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+            min-height: 200px;
+        }
+
+        .chart-container::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(ellipse at top right, rgba(99, 102, 241, 0.04), transparent 60%);
+            pointer-events: none;
+        }
+
+        /* Single Day Chart */
+        .day-chart {
+            position: relative;
+            min-height: 200px;
+        }
+
+        .day-chart-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: var(--text-primary);
+        }
+
+        .day-chart-subtitle {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+
+        .stage-timeline {
+            position: relative;
+            height: 140px;
+            margin: 16px 0;
+        }
+
+        .timeline-bg {
+            position: absolute;
+            top: 0;
+            left: 60px;
+            right: 0;
+            bottom: 20px;
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 8px;
+            border: 1px solid rgba(42, 53, 80, 0.5);
+        }
+
+        .y-labels {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 55px;
+            height: calc(100% - 20px);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 4px 0;
+        }
+
+        .y-label {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            text-align: right;
+            padding-right: 8px;
+            line-height: 1;
+        }
+
+        .stage-bar-container {
+            position: absolute;
+            top: 0;
+            left: 60px;
+            right: 0;
+            bottom: 20px;
+        }
+
+        .stage-bar {
+            position: absolute;
+            border-radius: 2px;
+            opacity: 0.85;
+            transition: opacity 0.2s ease;
+            cursor: pointer;
+        }
+
+        .stage-bar:hover {
+            opacity: 1;
+        }
+
+        .stage-bar.awake { background: var(--awake); }
+        .stage-bar.light { background: var(--light); }
+        .stage-bar.deep { background: var(--deep); }
+        .stage-bar.rem { background: var(--rem); }
+
+        .time-labels {
+            position: absolute;
+            bottom: 0;
+            left: 60px;
+            right: 0;
+            height: 20px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .time-label {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: fixed;
+            background: rgba(26, 34, 53, 0.95);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 0.8rem;
+            pointer-events: none;
+            z-index: 100;
+            backdrop-filter: blur(12px);
+            opacity: 0;
+            transition: opacity 0.15s ease;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+
+        .tooltip.visible {
+            opacity: 1;
+        }
+
+        .tooltip-stage {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .tooltip-time {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+        }
+
+        /* Overview chart */
+        .overview-chart {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .overview-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            height: 32px;
+            cursor: pointer;
+            padding: 2px 4px;
+            border-radius: 6px;
+            transition: background 0.2s ease;
+        }
+
+        .overview-row:hover {
+            background: rgba(139, 92, 246, 0.06);
+        }
+
+        .overview-date {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            width: 80px;
+            flex-shrink: 0;
+            font-weight: 500;
+        }
+
+        .overview-bar-container {
+            flex: 1;
+            height: 22px;
+            display: flex;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .overview-segment {
+            height: 100%;
+            transition: opacity 0.2s ease;
+        }
+
+        .overview-segment.awake { background: var(--awake); }
+        .overview-segment.light { background: var(--light); }
+        .overview-segment.deep { background: var(--deep); }
+        .overview-segment.rem { background: var(--rem); }
+
+        .overview-duration {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            width: 50px;
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        .overview-type-label {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            width: 40px;
+            flex-shrink: 0;
+            text-align: center;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        /* Stage duration bars */
+        .stage-summary {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .stage-summary-item {
+            text-align: center;
+        }
+
+        .stage-summary-bar {
+            height: 4px;
+            border-radius: 2px;
+            margin-bottom: 8px;
+        }
+
+        .stage-summary-bar.awake { background: var(--awake); }
+        .stage-summary-bar.light { background: var(--light); }
+        .stage-summary-bar.deep { background: var(--deep); }
+        .stage-summary-bar.rem { background: var(--rem); }
+
+        .stage-summary-value {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .stage-summary-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* Loading */
+        .loading {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            z-index: 10;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent-purple);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌙 Sleep Cycle Dashboard</h1>
+            <p>Generated from Health Connect</p>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item"><div class="legend-dot awake"></div> Awake</div>
+            <div class="legend-item"><div class="legend-dot rem"></div> REM</div>
+            <div class="legend-item"><div class="legend-dot light"></div> Light</div>
+            <div class="legend-item"><div class="legend-dot deep"></div> Deep</div>
+        </div>
+
+        <div id="summary" class="summary-grid"></div>
+
+        <div class="view-toggle">
+            <button class="toggle-btn active" onclick="setView('detail')" id="btn-detail" disabled>Day View</button>
+            <button class="toggle-btn" onclick="setView('overview')" id="btn-overview" disabled>Overview</button>
+        </div>
+
+        <div id="detail-view">
+            <div class="nav-row">
+                <button class="nav-btn" id="prev-btn" onclick="navigate(-1)" disabled>← Prev</button>
+                <span class="nav-title" id="nav-title">Loading...</span>
+                <button class="nav-btn" id="next-btn" onclick="navigate(1)" disabled>Next →</button>
+            </div>
+            <div class="chart-container" id="day-chart-container">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <div>Fetching data...</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="overview-view" style="display: none;">
+            <div class="nav-row">
+                <button class="nav-btn" id="ov-prev-btn" onclick="navigateOverview(-1)">← Newer</button>
+                <span class="nav-title" id="ov-nav-title"></span>
+                <button class="nav-btn" id="ov-next-btn" onclick="navigateOverview(1)">Older →</button>
+            </div>
+            <div class="chart-container" id="overview-chart-container"></div>
+        </div>
+    </div>
+
+    <div class="tooltip" id="tooltip">
+        <div class="tooltip-stage" id="tooltip-stage"></div>
+        <div class="tooltip-time" id="tooltip-time"></div>
+    </div>
+
+    <script>
+    // ========== GLOBALS ==========
+    let SESSIONS_RAW = [];
+    let STAGES_RAW = [];
+    let sessions = [];
+    let dayGroups = [];
+
+    // Stage type mapping
+    const STAGE_MAP = {
+        1: { name: 'Awake', cls: 'awake' },
+        4: { name: 'Light', cls: 'light' },
+        5: { name: 'Deep', cls: 'deep' },
+        6: { name: 'REM', cls: 'rem' },
+    };
+
+    const STAGE_Y = { 1: 0, 6: 1, 4: 2, 5: 3 }; // Y position: Awake top, Deep bottom
+
+    // ========== PROCESS DATA ==========
+    function processData() {
+        // Group stages by parent_key
+        const stagesBySession = {};
+        for (const s of STAGES_RAW) {
+            if (!stagesBySession[s.parent_key]) stagesBySession[s.parent_key] = [];
+            stagesBySession[s.parent_key].push(s);
+        }
+
+        // Parse sessions
+        sessions = SESSIONS_RAW.map(s => {
+            const startLocal = new Date(s.start_time + s.start_zone_offset * 1000);
+            const endLocal = new Date(s.end_time + s.start_zone_offset * 1000);
+            const durationMin = (s.end_time - s.start_time) / 60000;
+            const startHour = startLocal.getUTCHours();
+            const isNight = startHour >= 20 || startHour < 6;
+            return {
+                ...s,
+                startLocal,
+                endLocal,
+                durationMin,
+                isNight,
+                stages: stagesBySession[s.row_id] || [],
+                timeRange: formatTime(startLocal) + ' – ' + formatTime(endLocal),
+            };
+        });
+
+        const grouped = {};
+        for (const s of sessions) {
+            const refDate = s.isNight ? s.endLocal : s.startLocal;
+            const key = refDate.getUTCFullYear() + '-' +
+                        String(refDate.getUTCMonth() + 1).padStart(2, '0') + '-' +
+                        String(refDate.getUTCDate()).padStart(2, '0');
+            if (!grouped[key]) grouped[key] = { date: key, sessions: [] };
+            grouped[key].sessions.push(s);
+        }
+
+        const sortedDays = Object.keys(grouped).sort();
+        for (const k of sortedDays) dayGroups.push(grouped[k]);
+
+        // Enable buttons once data is processed
+        document.getElementById('btn-detail').disabled = false;
+        document.getElementById('btn-overview').disabled = false;
+        
+        // Start viewing
+        currentDayIndex = dayGroups.length - 1;
+    }
+
+    // ========== HELPERS ==========
+    function formatTime(d) {
+        return String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0');
+    }
+
+    function formatDuration(mins) {
+        const h = Math.floor(mins / 60);
+        const m = Math.round(mins % 60);
+        return h > 0 ? `${h}h ${m}m` : `${m}m`;
+    }
+
+    function formatDurationShort(mins) {
+        const h = Math.floor(mins / 60);
+        const m = Math.round(mins % 60);
+        return h > 0 ? `${h}h${m > 0 ? m + 'm' : ''}` : `${m}m`;
+    }
+
+    // ========== COMPUTE STATS ==========
+    function renderSummary() {
+        const nightSessions = sessions.filter(s => s.isNight);
+        const napSessions = sessions.filter(s => !s.isNight);
+
+        const avgNightDur = nightSessions.length > 0 
+            ? nightSessions.reduce((a, s) => a + s.durationMin, 0) / nightSessions.length : 0;
+            
+        let totalDeep = 0, totalRem = 0;
+        for (const s of sessions) {
+            for (const st of s.stages) {
+                const dur = (st.stage_end_time - st.stage_start_time) / 60000;
+                if (st.stage_type === 5) totalDeep += dur;
+                else if (st.stage_type === 6) totalRem += dur;
+            }
+        }
+
+        const totalSleepSessions = nightSessions.length;
+        const avgDeep = totalSleepSessions > 0 ? totalDeep / totalSleepSessions : 0;
+        const avgRem = totalSleepSessions > 0 ? totalRem / totalSleepSessions : 0;
+
+        const avgStartHour = nightSessions.length > 0
+            ? nightSessions.reduce((a, s) => {
+                let h = s.startLocal.getUTCHours() + s.startLocal.getUTCMinutes() / 60;
+                if (h < 12) h += 24;
+                return a + h;
+            }, 0) / nightSessions.length : 0;
+
+        const displayStartHour = avgStartHour >= 24 ? avgStartHour - 24 : avgStartHour;
+        const startH = Math.floor(displayStartHour);
+        const startM = Math.round((displayStartHour - startH) * 60);
+        const avgBedtime = `${String(startH).padStart(2, '0')}:${String(startM).padStart(2, '0')}`;
+
+        document.getElementById('summary').innerHTML = `
+            <div class="summary-card">
+                <div class="summary-value">${formatDuration(avgNightDur)}</div>
+                <div class="summary-label">Avg Night Sleep</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-value">${avgBedtime}</div>
+                <div class="summary-label">Avg Bedtime</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-value">${formatDuration(avgRem)}</div>
+                <div class="summary-label">Avg REM / Night</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-value">${formatDuration(avgDeep)}</div>
+                <div class="summary-label">Avg Deep / Night</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-value">${totalSleepSessions + napSessions.length}</div>
+                <div class="summary-label">Total Sessions</div>
+            </div>
+        `;
+    }
+
+    // ========== DETAIL VIEW ==========
+    let currentDayIndex = 0;
+
+    function renderDayChart() {
+        if (dayGroups.length === 0) return;
+        const group = dayGroups[currentDayIndex];
+        const container = document.getElementById('day-chart-container');
+        document.getElementById('nav-title').textContent = group.date;
+        document.getElementById('prev-btn').disabled = currentDayIndex <= 0;
+        document.getElementById('next-btn').disabled = currentDayIndex >= dayGroups.length - 1;
+
+        let html = '';
+        for (const session of group.sessions) {
+            const type = session.isNight ? '🌙 Night Sleep' : '☀️ Nap';
+            html += `<div class="day-chart">
+                <div class="day-chart-title">${type}</div>
+                <div class="day-chart-subtitle">${session.timeRange} · ${formatDuration(session.durationMin)}</div>`;
+
+            if (session.stages.length > 0) {
+                const sessionStart = session.start_time;
+                const totalDur = session.end_time - sessionStart;
+
+                html += `<div class="stage-timeline">
+                    <div class="y-labels">
+                        <div class="y-label">Awake</div>
+                        <div class="y-label">REM</div>
+                        <div class="y-label">Light</div>
+                        <div class="y-label">Deep</div>
+                    </div>
+                    <div class="timeline-bg"></div>
+                    <div class="stage-bar-container">`;
+
+                for (const st of session.stages) {
+                    const stageInfo = STAGE_MAP[st.stage_type];
+                    if (!stageInfo) continue;
+                    const left = ((st.stage_start_time - sessionStart) / totalDur) * 100;
+                    const width = ((st.stage_end_time - st.stage_start_time) / totalDur) * 100;
+                    const top = STAGE_Y[st.stage_type] * 25;
+
+                    const startT = new Date(st.stage_start_time + session.start_zone_offset * 1000);
+                    const endT = new Date(st.stage_end_time + session.start_zone_offset * 1000);
+                    const durMin = Math.round((st.stage_end_time - st.stage_start_time) / 60000);
+
+                    html += `<div class="stage-bar ${stageInfo.cls}" 
+                        style="left:${left}%;width:${Math.max(width, 0.3)}%;top:${top}%;height:25%"
+                        data-stage="${stageInfo.name}"
+                        data-time="${formatTime(startT)} – ${formatTime(endT)} (${durMin}min)"
+                        onmouseenter="showTooltip(event, this)"
+                        onmousemove="moveTooltip(event)"
+                        onmouseleave="hideTooltip()"></div>`;
+                }
+                html += `</div>`;
+
+                const startLocal = new Date(sessionStart + session.start_zone_offset * 1000);
+                const midLocal = new Date((sessionStart + session.end_time) / 2 + session.start_zone_offset * 1000);
+                const endLocal = new Date(session.end_time + session.start_zone_offset * 1000);
+
+                html += `<div class="time-labels">
+                    <div class="time-label">${formatTime(startLocal)}</div>
+                    <div class="time-label">${formatTime(midLocal)}</div>
+                    <div class="time-label">${formatTime(endLocal)}</div>
+                </div></div>`;
+
+                let deepMin = 0, remMin = 0, lightMin = 0, awakeMin = 0;
+                for (const st of session.stages) {
+                    const dur = (st.stage_end_time - st.stage_start_time) / 60000;
+                    if (st.stage_type === 5) deepMin += dur;
+                    else if (st.stage_type === 6) remMin += dur;
+                    else if (st.stage_type === 4) lightMin += dur;
+                    else if (st.stage_type === 1) awakeMin += dur;
+                }
+
+                html += `<div class="stage-summary">
+                    <div class="stage-summary-item"><div class="stage-summary-bar deep"></div><div class="stage-summary-value">${formatDurationShort(deepMin)}</div><div class="stage-summary-label">Deep</div></div>
+                    <div class="stage-summary-item"><div class="stage-summary-bar rem"></div><div class="stage-summary-value">${formatDurationShort(remMin)}</div><div class="stage-summary-label">REM</div></div>
+                    <div class="stage-summary-item"><div class="stage-summary-bar light"></div><div class="stage-summary-value">${formatDurationShort(lightMin)}</div><div class="stage-summary-label">Light</div></div>
+                    <div class="stage-summary-item"><div class="stage-summary-bar awake"></div><div class="stage-summary-value">${formatDurationShort(awakeMin)}</div><div class="stage-summary-label">Awake</div></div>
+                </div>`;
+            } else {
+                html += `<p style="color: var(--text-muted); font-size: 0.85rem;">No stage data available for this session.</p></div>`;
+            }
+
+            html += `<hr style="border: none; border-top: 1px solid var(--border); margin: 20px 0;">`;
+        }
+
+        container.innerHTML = html;
+    }
+
+    function navigate(dir) {
+        currentDayIndex = Math.max(0, Math.min(dayGroups.length - 1, currentDayIndex + dir));
+        renderDayChart();
+    }
+
+    // ========== OVERVIEW VIEW ==========
+    const OVERVIEW_PAGE_SIZE = 14;
+    let overviewPage = 0;
+
+    function renderOverview() {
+        const nightSessions = sessions.filter(s => s.isNight).reverse();
+        const pages = [];
+        for (let i = 0; i < nightSessions.length; i += OVERVIEW_PAGE_SIZE) {
+            pages.push(nightSessions.slice(i, i + OVERVIEW_PAGE_SIZE));
+        }
+
+        if (pages.length === 0) return;
+        overviewPage = Math.min(overviewPage, pages.length - 1);
+        const page = pages[overviewPage];
+
+        document.getElementById('ov-prev-btn').disabled = overviewPage <= 0;
+        document.getElementById('ov-next-btn').disabled = overviewPage >= pages.length - 1;
+        document.getElementById('ov-nav-title').textContent = `Page ${overviewPage + 1} of ${pages.length}`;
+
+        const container = document.getElementById('overview-chart-container');
+        let html = '<div class="overview-chart">';
+
+        for (const session of page) {
+            const stages = session.stages;
+            const totalDur = session.end_time - session.start_time;
+
+            let segmentsHtml = '';
+            for (const st of stages) {
+                const stageInfo = STAGE_MAP[st.stage_type];
+                if (!stageInfo) continue;
+                const width = ((st.stage_end_time - st.stage_start_time) / totalDur) * 100;
+                segmentsHtml += `<div class="overview-segment ${stageInfo.cls}" style="width:${Math.max(width, 0.2)}%"></div>`;
+            }
+
+            const refDate = session.endLocal;
+            const dateStr = String(refDate.getUTCMonth() + 1).padStart(2, '0') + '/' + String(refDate.getUTCDate()).padStart(2, '0');
+            const dateKey = `${refDate.getUTCFullYear()}-${String(refDate.getUTCMonth()+1).padStart(2,'0')}-${String(refDate.getUTCDate()).padStart(2,'0')}`;
+
+            html += `<div class="overview-row" onclick="goToDay('${dateKey}')">
+                <div class="overview-date">${dateStr}</div>
+                <div class="overview-bar-container">${segmentsHtml}</div>
+                <div class="overview-duration">${formatDurationShort(session.durationMin)}</div>
+            </div>`;
+        }
+
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    function navigateOverview(dir) {
+        overviewPage += dir;
+        renderOverview();
+    }
+
+    function goToDay(dateKey) {
+        const idx = dayGroups.findIndex(g => g.date === dateKey);
+        if (idx >= 0) {
+            currentDayIndex = idx;
+            setView('detail');
+        }
+    }
+
+    // ========== VIEW TOGGLE ==========
+    let currentView = 'detail';
+
+    function setView(view) {
+        currentView = view;
+        document.getElementById('btn-detail').classList.toggle('active', view === 'detail');
+        document.getElementById('btn-overview').classList.toggle('active', view === 'overview');
+        document.getElementById('detail-view').style.display = view === 'detail' ? 'block' : 'none';
+        document.getElementById('overview-view').style.display = view === 'overview' ? 'block' : 'none';
+
+        if (view === 'detail') renderDayChart();
+        else renderOverview();
+    }
+
+    // ========== TOOLTIP ==========
+    function showTooltip(e, el) {
+        const tooltip = document.getElementById('tooltip');
+        document.getElementById('tooltip-stage').textContent = el.dataset.stage;
+        document.getElementById('tooltip-time').textContent = el.dataset.time;
+        tooltip.classList.add('visible');
+        moveTooltip(e);
+    }
+
+    function moveTooltip(e) {
+        const tooltip = document.getElementById('tooltip');
+        tooltip.style.left = (e.clientX + 12) + 'px';
+        tooltip.style.top = (e.clientY - 40) + 'px';
+    }
+
+    function hideTooltip() {
+        document.getElementById('tooltip').classList.remove('visible');
+    }
+
+    // ========== INIT (FETCH DATA) ==========
+    async function init() {
+        const loadingOverlay = document.createElement('div');
+        try {
+            const [sessionsRes, stagesRes] = await Promise.all([
+                fetch('sessions.json'),
+                fetch('stages.json')
+            ]);
+            
+            if (!sessionsRes.ok || !stagesRes.ok) {
+                throw new Error("HTTP " + sessionsRes.status + ". Expected files 'sessions.json' and 'stages.json' in the same folder.");
+            }
+            
+            SESSIONS_RAW = await sessionsRes.json();
+            STAGES_RAW = await stagesRes.json();
+            
+            processData();
+            renderSummary();
+            renderDayChart();
+
+            // clear loading spinner early if success
+            let loadingEl = document.querySelector('#day-chart-container .loading');
+            if(loadingEl) loadingEl.remove();
+
+        } catch (error) {
+            console.error("Error loading data:", error);
+            document.getElementById('day-chart-container').innerHTML = `
+                <div style="padding: 30px; margin: auto; color: #f87171; text-align: center; max-width: 500px;">
+                    <div style="font-size: 2rem; margin-bottom: 10px;">⚠️</div>
+                    <h3 style="margin-bottom: 10px;">Data Setup Required</h3>
+                    <p style="color: var(--text-secondary); line-height: 1.5; font-size: 0.9rem;">
+                        ${error.message}<br><br>
+                        <strong>Note:</strong> This dashboard cannot be opened directly from your hard drive (\`file://\`) due to browser security rules.<br><br>
+                        It works perfectly when uploaded to <strong>GitHub Pages</strong>, <strong>Tiiny.host</strong>, or a local web server with the two JSON files placed securely alongside it.
+                    </p>
+                </div>`;
+        }
+    }
+
+    // Run fetch
+    init();
+    </script>
+</body>
+</html>
